@@ -62,9 +62,9 @@
 
 # Compiler and compiler flags
 PROGRAM_NAME := myapp
-CC := gcc
+CC := g++
 CCFLAGS := -Wall -Wextra
-LDFLAGS := -lm
+LDFLAGS := -lm -lncurses
 STD_MODE := debug
 VALGRIND_FLAGS := --leak-check=full --show-leak-kinds=all
 
@@ -118,11 +118,11 @@ ifeq ($(wildcard $(SRC_DIR)),)
 endif
 
 # Include directories
-INCLUDE := $(shell find ./ -type f \( -name "*.h" -o -name "*.hpp" \) -exec dirname {} \; -print0 | sort -zu | while IFS= read -r -d '' folder; do echo "-I'$folder' "; done)
+INCLUDE := $(shell find $(INC_DIR)/ -type d -printf "-I%p ") $(shell find $(SRC_DIR)/ -type d -printf "-I%p ")
 
 # Collect source files
-CPP_FILES := $(shell find $(SRC_DIR) -name '*.cpp' -print0 | tr '\0' ' ')
-C_FILES := $(shell find $(SRC_DIR) -name '*.c' -print0 | tr '\0' ' ')
+CPP_FILES := $(shell find $(SRC_DIR) -name '*.cpp')
+C_FILES := $(shell find $(SRC_DIR) -name '*.c')
 
 # Generate corresponding object file names
 CPP_OBJ_FILES := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(CPP_FILES))
@@ -208,21 +208,38 @@ endif
 
 # Compile source files and link to executable
 $(EXECUTABLE): $(OBJ_FILES)
-	@$(MKDIR) $(@D)
 	@$(ECHO) "[$(MODE):rule:link]\t Linking executable '$(PROGRAM_NAME)'..."
-	$(CC) $(CCFLAGS) $(INCLUDE) $^ -o $@ $(LDFLAGS)
+ifeq ($(VERBOSE),)
+	@$(MKDIR) "$(@D)"
+	@$(CC) $(CCFLAGS) $(INCLUDE) $^ -o "$@" $(LDFLAGS)
+else
+	$(MKDIR) "$(@D)"
+	$(CC) $(CCFLAGS) $(INCLUDE) $^ -o "$@" $(LDFLAGS)
+endif
 
 # Compile C++ source files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	@$(MKDIR) -p $(@D)
 	@$(ECHO) "[$(MODE):rule:compile]\t Compiling $(subst $(OBJ_DIR)/,,$@)..."
-	$(CC) $(CCFLAGS) $(INCLUDE) -MMD -MP -c $< -o $@
+ifeq ($(VERBOSE),)
+	@$(MKDIR) "$(@D)"
+	@$(CC) $(CCFLAGS) $(INCLUDE) -MMD -MP -c "$<" -o "$@"
+else
+	$(MKDIR) "$(@D)"
+	$(CC) $(CCFLAGS) $(INCLUDE) -MMD -MP -c "$<" -o "$@"
+endif
+
 
 # Compile C source files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	@$(MKDIR) -p $(@D)
 	@$(ECHO) "[$(MODE):rule:compile]\t Compiling $(subst $(OBJ_DIR)/,,$@)..."
-	$(CC) $(CCFLAGS) $(INCLUDE) -MMD -MP -c $< -o $@
+ifeq ($(VERBOSE),)
+	@$(MKDIR) $(@D)
+	@$(CC) $(CCFLAGS) $(INCLUDE) -MMD -MP -c "$<" -o "$@"
+else
+	$(MKDIR) $(@D)
+	$(CC) $(CCFLAGS) $(INCLUDE) -MMD -MP -c "$<" -o "$@"
+endif
+
 
 # Include dependency files
 -include $(DEP_FILES)
@@ -242,7 +259,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 clean:
 	@$(ECHO) "ʕノ•ᴥ•ʔノ ︵ ┻━┻"
 	@$(ECHO) "[$(MODE):clean]\t Cleaning this mess..."
-	@$(RM) $(TARGET_DIR)
+	@$(RM) "$(TARGET_DIR)"
 
 # Clean and clear the console
 clear: clean
@@ -264,11 +281,11 @@ quick:
 # Run Valgrind memory analysis
 analysis: build
 	@$(ECHO) "[$(MODE):analysis]\t Starting analysis..."
-	@$(MKDIR) $(ANALYSIS_DIR)
+	@$(MKDIR) "$(ANALYSIS_DIR)"
 	@$(eval ANALYSIS_COUNT := $(shell ls -1 $(ANALYSIS_DIR) | grep -oE 'valgrind_analysis_[0-9]+' | sort -rn | head -n 1 | grep -oE '[0-9]+'))
 	@$(eval NEXT_ANALYSIS_COUNT := $(shell echo $$(($(ANALYSIS_COUNT) + 1))))
 	@$(eval ANALYSIS_FILENAME := valgrind_analysis_$(shell printf "%03d" $(NEXT_ANALYSIS_COUNT)).txt)
-	valgrind $(VALGRIND_FLAGS) $(EXECUTABLE) > $(ANALYSIS_DIR)/$(ANALYSIS_FILENAME) 2>&1
+	valgrind $(VALGRIND_FLAGS) "$(EXECUTABLE)" > "$(ANALYSIS_DIR)/$(ANALYSIS_FILENAME)" 2>&1
 
 # Prompt for user confirmation before nuking the target folder
 NUKE:
@@ -276,7 +293,7 @@ NUKE:
 	@$(ECHO) "	( 0 _ 0 )"
 	@read -p "Are you sure you want to NUKE the target folder? This will delete all build artifacts. (yes/no): " confirmation; \
 	if [ "$$confirmation" = "yes" ]; then \
-		$(RM) $(TARGET_ROOT_DIR); \
+		$(RM) "$(TARGET_ROOT_DIR)"; \
 		$(ECHO) "ヽ(｀Д´)⊃━☆ﾟ. * ･ ｡ﾟ, Target folder nuked."; \
 		$(ECHO) " "; \
 	else \
@@ -364,8 +381,8 @@ b:
 
 
 bundle:
-	@$(MKDIR) $(TARGET_ROOT_DIR)/bundle
-	@$(MKDIR) $(TARGET_ROOT_DIR)/config
+	@$(MKDIR) "$(TARGET_ROOT_DIR)/bundle"
+	@$(MKDIR) "$(TARGET_ROOT_DIR)/config"
 	@$(ECHO) '--FORCE-RELEASE' >> bundle-force-release.txt
 	@echo "Creating bundle..."
 	@zip -r $(BUNDLE_DIR)/$(BUNDLE_NAME) ./ -x "target/*" ".git/*" ".vscode"
