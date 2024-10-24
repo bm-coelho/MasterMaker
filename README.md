@@ -1,7 +1,3 @@
-Here’s a draft for the README of your Makefile project:
-
----
-
 # MasterMaker - A Simple Build System
 
 
