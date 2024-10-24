@@ -62,7 +62,7 @@
 
 # Compiler and compiler flags
 PROGRAM_NAME := myapp
-CC := g++
+CC := gcc
 CCFLAGS := -Wall -Wextra
 LDFLAGS := -lm -lncurses
 STD_MODE := debug
@@ -327,6 +327,17 @@ hello:
 	@$(ECHO) "( * ^ *) ノシ"
 	@$(ECHO) "Hello, World!"
 
+
+# Allows changing some configurations from the command line
+set:
+	@sed -i 's/^CC := .*/CC := '"$(CC)"'/' Makefile
+	@sed -i 's/^CCFLAGS := .*/CCFLAGS := '"$(CCFLAGS)"'/' Makefile
+	@sed -i 's/^LDFLAGS := .*/LDFLAGS := '"$(LDFLAGS)"'/' Makefile
+	@sed -i 's/^STD_MODE := .*/STD_MODE := '"$(STD_MODE)"'/' Makefile
+	@sed -i 's/^VALGRIND_FLAGS := .*/VALGRIND_FLAGS := '"$(VALGRIND_FLAGS)"'/' Makefile
+	@$(ECHO) "Configuration updated."
+
+
 # Help target to display available targets and their descriptions
 help:
 	@echo ""
@@ -345,6 +356,7 @@ help:
 	@echo "  analysis    - Run Valgrind memory analysis"
 	@echo "  gitignore   - Create a .gitignore file for common build artifacts"
 	@echo "  hello       - Print a friendly greeting"
+	@echo "  set         - Change some configurations from the command line"
 	@echo ""
 	@echo "Advanced targets:"
 	@echo ""

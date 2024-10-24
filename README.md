@@ -146,7 +146,3 @@ The MIT License (MIT)
 ```
 
 Feel free to modify and redistribute this software under the terms of the MIT License.
-
----
-
-Let me know if you'd like to modify or add more details!
